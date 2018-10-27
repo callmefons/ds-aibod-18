@@ -1,0 +1,21 @@
+---
+title: "Miyama City Electric Power Demand by Circuit"
+author: "TeamAIBOD"
+date: "2018/9/4"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+---
+
+<style type="text/css">
+</style>
+
+
+### Project Overview
+Using R and Machine Learning to analyze electric power demand by circuit data from Miyama City in Fukuoka, Japan, and to build models to predict electric power consumption.
+The series will be comprised of two different articles describing the major aspects of a Machine Learning project. The topics to be covered are:
+
+* **[Data analysis](miyama_analysis.html) **
+* **[Linear regression model](miyama_linear_model.html) **
+* **[Random Forest Regression Model](miyama_tree_model.html) **

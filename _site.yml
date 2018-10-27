@@ -1,0 +1,10 @@
+name: "Miyama Project"
+navbar:
+  title: "Miyama Project"
+  left:
+    - text: "Data Analysis"
+      href: miyama_analysis.html
+    - text: "Linear Regression Model"
+      href: miyama_linear_model.html
+    - text: "Random Forest Regression Model"
+      href: miyama_tree_model.html

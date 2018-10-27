@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<title>Miyama City Electric Power Demand by Circuit : Data Analysis</title>
+
+<script src="site_libs/htmlwidgets-1.2/htmlwidgets.js"></script>
+<script src="site_libs/jquery-1.12.4/jquery.min.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.4/datatables.js"></script>
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.10.16/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.0.0/css/crosstalk.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.0.0/js/crosstalk.min.js"></script>
+<link href="site_libs/leaflet-1.3.1/leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-1.3.1/leaflet.js"></script>
+<link href="site_libs/leafletfix-1.0.0/leafletfix.css" rel="stylesheet" />
+<script src="site_libs/Proj4Leaflet-1.0.1/proj4-compressed.js"></script>
+<script src="site_libs/Proj4Leaflet-1.0.1/proj4leaflet.js"></script>
+<link href="site_libs/rstudio_leaflet-1.3.1/rstudio_leaflet.css" rel="stylesheet" />
+<script src="site_libs/leaflet-binding-2.0.2/leaflet.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link rel="stylesheet" href="miyama_analysis_files/style.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<header>
+<div class="inner">
+<h1 class="title toc-ignore">Miyama City Electric Power Demand by Circuit : Data Analysis</h1>
+</div>
+</header>
+
+
+
+<div id="content-wrapper">
+  <div class="inner clearfix">
+    <section id="main-content">
+<style type="text/css">
+</style>
+<p><nav> <a href="index.html">Home</a> | <a href="miyama_analysis.html">Data Analysis</a> | <a href="miyama_linear_model.html">Linear Regression Model</a> | <a href="miyama_tree_model.html">Random Forest Regression Model</a> | </nav></p>
+<div id="data-collection" class="section level3">
+<h3>Data Collection</h3>
+<p>We obtained individual household electric power consumption dataset collected between November 2017 and July 2018 (9 months) from Miyama city in Fukuoka, Japan.</p>
+<p>These electric data contains historical electric data collect by 30 minutes, day, hour, month, and year history of each household. Morover, we acquired detailed datasets including postal code, plan type, user id, and user name of each household.</p>
+<p>The dataset contains some missing values in the measurements and some information that needed to be clean up.</p>
+</div>
+<div id="data-wrangling" class="section level3">
+<h3>Data Wrangling</h3>
+<p>The process of collecting, cleaning and reformatting the data collected, we are going to finish the following tasks.</p>
+<div id="get-data" class="section level4">
+<h4>Get data</h4>
+<p>Get minute electricity from the original data obtained from Miyama City. Picked energy consumption data from 2018/01/01 to 2018/06/30.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">y &lt;-<span class="st"> </span><span class="dv">2018</span>
+ms &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">6</span>
+ds &lt;-<span class="st"> </span><span class="kw">as.integer</span>(<span class="kw">days_in_month</span>(<span class="kw">as.Date</span>(<span class="kw">sprintf</span>(<span class="st">&quot;%d-%d-01&quot;</span>, y, ms))))
+uids &lt;-<span class="st"> </span><span class="kw">dir</span>(<span class="st">&quot;./回路別&quot;</span>)
+<span class="co"># Find households that have all the data for 6 months.</span>
+nts &lt;-<span class="st"> </span><span class="kw">rep</span>(<span class="dv">0</span>, <span class="kw">length</span>(uids))
+<span class="kw">names</span>(nts) &lt;-<span class="st"> </span>uids
+<span class="cf">for</span> (uid <span class="cf">in</span> uids) {
+  header &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;./回路別/%s/collect_30minhistory/%d/collect_30minhistory&quot;</span>, uid, y)
+  nt &lt;-<span class="st"> </span><span class="dv">0</span>
+  <span class="cf">for</span> (m <span class="cf">in</span> ms) {
+    d &lt;-<span class="st"> </span>ds[m]
+    file &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;%s_%d%02d01_%d%02d%02d.csv&quot;</span>, header, y, m, y, m, d)
+    f &lt;-<span class="st"> </span><span class="kw">file.exists</span>(file)
+    <span class="cf">if</span> (f <span class="op">==</span><span class="st"> </span><span class="ot">TRUE</span>) { nt &lt;-<span class="st"> </span>nt <span class="op">+</span><span class="st"> </span><span class="dv">1</span> }
+  }
+  nts[uid] &lt;-<span class="st"> </span>nt
+}
+avail_uids &lt;-<span class="st"> </span><span class="kw">names</span>(nts)[nts<span class="op">==</span><span class="dv">6</span>]
+<span class="co"># Read data</span>
+data &lt;-<span class="st"> </span><span class="kw">list</span>()
+na.list &lt;-<span class="st"> </span><span class="kw">list</span>()
+n.list &lt;-<span class="st"> </span><span class="kw">list</span>()
+<span class="cf">for</span> (uid <span class="cf">in</span> avail_uids) {
+  header &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;./回路別/%s/collect_30minhistory/%d/collect_30minhistory&quot;</span>, uid, y)
+  <span class="cf">for</span> (m <span class="cf">in</span> ms) {
+    d &lt;-<span class="st"> </span>ds[m]
+    nr0 &lt;-<span class="st"> </span>d<span class="op">*</span><span class="dv">48</span> <span class="co"># Number of data lines that should be included.</span>
+    file &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;%s_%d%02d01_%d%02d%02d.csv&quot;</span>, header, y, m, y, m, d)
+    df.tmp &lt;-<span class="st"> </span><span class="kw">read.csv</span>(file, <span class="dt">header=</span>T)
+    <span class="cf">if</span> (<span class="kw">nrow</span>(df.tmp) <span class="op">!=</span><span class="st"> </span>nr0) {
+      n.list &lt;-<span class="st"> </span><span class="kw">rbind</span>(n.list, <span class="kw">data.frame</span>(<span class="dt">uid=</span>uid, <span class="dt">month=</span>m, <span class="dt">nr=</span><span class="kw">nrow</span>(df.tmp), <span class="dt">nr0=</span>nr0))
+    }
+    x &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.character</span>(df.tmp[[<span class="dv">1</span>]]))
+    yrs &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.integer</span>(<span class="kw">substr</span>(x, <span class="dv">1</span>, <span class="dv">4</span>)))
+    mts &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.integer</span>(<span class="kw">substr</span>(x, <span class="dv">5</span>, <span class="dv">6</span>)))
+    dys &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.integer</span>(<span class="kw">substr</span>(x, <span class="dv">7</span>, <span class="dv">8</span>)))
+    hrs &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.integer</span>(<span class="kw">substr</span>(x, <span class="dv">9</span>, <span class="dv">10</span>)))
+    mns &lt;-<span class="st"> </span><span class="kw">suppressWarnings</span>(<span class="kw">as.integer</span>(<span class="kw">substr</span>(x, <span class="dv">11</span>, <span class="dv">12</span>)))
+    <span class="kw">suppressWarnings</span>(dates &lt;-
+<span class="st">               </span><span class="kw">as.POSIXct</span>(<span class="kw">sprintf</span>(<span class="st">&quot;%d-%d-%d %02d:%02d&quot;</span>, yrs, mts, dys, hrs, mns),
+                        <span class="dt">format=</span><span class="st">&quot;%Y-%m-%d %H:%M&quot;</span>, <span class="dt">optional=</span>T))
+    pp &lt;-<span class="st"> </span><span class="kw">which</span>(<span class="kw">is.na</span>(dates))
+    nna &lt;-<span class="st"> </span><span class="kw">length</span>(pp)
+    <span class="co"># Record missing row information (uid, month, row).</span>
+    <span class="cf">if</span> (nna<span class="op">&gt;</span><span class="dv">0</span>) {
+      <span class="cf">for</span> (p <span class="cf">in</span> pp) {
+        na.list &lt;-<span class="st"> </span><span class="kw">rbind</span>(na.list, <span class="kw">data.frame</span>(<span class="dt">uid=</span>uid, <span class="dt">month=</span>m, <span class="dt">position=</span>p))
+      }
+    }
+    data &lt;-<span class="st"> </span><span class="kw">rbind</span>(data, <span class="kw">data.frame</span>(<span class="dt">datetime=</span>dates, <span class="dt">power=</span>df.tmp[[<span class="st">&#39;使用電力量&#39;</span>]],
+                      <span class="dt">user_id=</span><span class="kw">rep</span>(uid, <span class="dt">times=</span><span class="kw">nrow</span>(df.tmp))) ) 
+  }
+}</code></pre></div>
+</div>
+<div id="handling-id-of-households-with-insufficient-number-of-data" class="section level4">
+<h4>Handling ID of households with insufficient number of data</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">num_rows &lt;-<span class="st"> </span><span class="kw">sapply</span>(avail_uids, <span class="cf">function</span>(x) <span class="kw">length</span>(<span class="kw">which</span>(data<span class="op">$</span>user_id<span class="op">==</span>x)))
+
+n0 &lt;-<span class="st"> </span><span class="kw">sum</span>(ds) <span class="op">*</span><span class="st"> </span><span class="dv">48</span>
+<span class="kw">cat</span>(<span class="st">&quot;ID of households with insufficient number of data</span><span class="ch">\n</span><span class="st">&quot;</span>)
+<span class="kw">cat</span>(<span class="kw">sprintf</span>(<span class="st">&quot;  %s</span><span class="ch">\n</span><span class="st">&quot;</span>, <span class="kw">paste</span>(<span class="kw">names</span>(num_rows)[num_rows <span class="op">!=</span><span class="st"> </span>n0], <span class="dt">collapse=</span><span class="st">&quot;, &quot;</span>)))
+
+<span class="cf">if</span> (<span class="ot">FALSE</span>) {
+  <span class="kw">cat</span>(<span class="kw">sprintf</span>(<span class="st">&quot;# of NA (datetime) = %d</span><span class="ch">\n</span><span class="st">&quot;</span>, <span class="kw">sum</span>(<span class="kw">is.na</span>(data<span class="op">$</span>datetime))))
+  <span class="kw">cat</span>(<span class="kw">sprintf</span>(<span class="st">&quot;# of NA (power) = %s</span><span class="ch">\n</span><span class="st">&quot;</span>, <span class="kw">sum</span>(data<span class="op">$</span>power <span class="op">==</span><span class="st"> &#39;-&#39;</span>)))
+  <span class="kw">cat</span>(<span class="st">&quot;## SAMPLES which datetime is OK but power is -</span><span class="ch">\n</span><span class="st">&quot;</span>)
+  a &lt;-<span class="st"> </span><span class="kw">which</span>(<span class="kw">is.na</span>(data<span class="op">$</span>datetime))
+  b &lt;-<span class="st"> </span><span class="kw">which</span>(data<span class="op">$</span>power <span class="op">==</span><span class="st"> &#39;-&#39;</span>)
+  <span class="kw">print</span>(<span class="kw">head</span>(data[<span class="kw">setdiff</span>(b, a),]))
+}</code></pre></div>
+</div>
+<div id="change-date-and-time-part-to-date-and-time-code." class="section level4">
+<h4>Change date and time part to date and time code.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Read data</span>
+avail_uids2 &lt;-<span class="st"> </span><span class="kw">setdiff</span>(avail_uids, n.list<span class="op">$</span>uid)
+data2 &lt;-<span class="st"> </span><span class="kw">list</span>()
+<span class="cf">for</span> (uid <span class="cf">in</span> avail_uids2) {
+  header &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;./回路別/%s/collect_30minhistory/%d/collect_30minhistory&quot;</span>, uid, y)
+  <span class="cf">for</span> (m <span class="cf">in</span> ms) {
+    d &lt;-<span class="st"> </span>ds[m]
+    file &lt;-<span class="st"> </span><span class="kw">sprintf</span>(<span class="st">&quot;%s_%d%02d01_%d%02d%02d.csv&quot;</span>, header, y, m, y, m, d)
+    df.tmp &lt;-<span class="st"> </span><span class="kw">read.csv</span>(file, <span class="dt">header=</span>T)
+    ndata &lt;-<span class="st"> </span><span class="kw">nrow</span>(df.tmp)
+    dt0 &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="kw">sprintf</span>(<span class="st">&quot;%d-%d-01&quot;</span>, y, m))
+    dt1 &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="kw">sprintf</span>(<span class="st">&quot;%d-%d-%d&quot;</span>, y, m, d))
+    data2 &lt;-<span class="st"> </span><span class="kw">rbind</span>(data2, <span class="kw">data.frame</span>(
+      <span class="dt">Date=</span><span class="kw">rep</span>(<span class="kw">seq</span>(dt0, dt1, <span class="dt">by=</span><span class="st">&quot;days&quot;</span>), <span class="dt">each=</span><span class="dv">48</span>),
+      <span class="dt">timecode=</span><span class="kw">rep</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">48</span>, <span class="dt">times=</span>d),
+      <span class="dt">power=</span>df.tmp[[<span class="st">&#39;使用電力量&#39;</span>]],
+      <span class="dt">user_id=</span><span class="kw">rep</span>(uid, <span class="dt">times=</span>ndata)) )
+  }
+}
+data2<span class="op">$</span>power[data2<span class="op">$</span>power<span class="op">==</span><span class="st">&#39;-&#39;</span>] &lt;-<span class="st"> </span><span class="ot">NA</span></code></pre></div>
+</div>
+<div id="add-day-information-including-holidays-and-holidays-on-sundays." class="section level4">
+<h4>Add day information including Holidays and holidays on Sundays.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">get.jholidays &lt;-<span class="st"> </span><span class="cf">function</span>(year) {
+  <span class="co"># Acquire Japanese holiday information.</span>
+  holidays &lt;-<span class="st"> </span>Nippon<span class="op">::</span><span class="kw">jholiday</span>(year, <span class="dt">holiday.names=</span>F)
+  
+  <span class="co"># Definition of the New Year&#39;s holiday, Obon vacation.</span>
+  extra.holidays &lt;-<span class="st"> </span><span class="kw">as.Date</span>(<span class="kw">c</span>(<span class="kw">paste0</span>(year, <span class="st">&quot;-1-&quot;</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">3</span>), <span class="kw">paste0</span>(year, <span class="st">&quot;-8-&quot;</span>,
+                                                               <span class="dv">13</span><span class="op">:</span><span class="dv">15</span>),
+                              <span class="kw">paste0</span>(year, <span class="st">&quot;-12-&quot;</span>, <span class="dv">29</span><span class="op">:</span><span class="dv">31</span>)))
+  holidays &lt;-<span class="st"> </span><span class="kw">c</span>(holidays, extra.holidays)
+  <span class="kw">return</span>(holidays)
+}
+
+holidays &lt;-<span class="st"> </span><span class="kw">get.jholidays</span>(y)
+data2<span class="op">$</span>wday &lt;-<span class="st"> </span><span class="kw">wday</span>(data2<span class="op">$</span>Date)
+data2<span class="op">$</span>wday[data2<span class="op">$</span>Date <span class="op">%in%</span><span class="st"> </span>holidays] &lt;-<span class="st"> </span><span class="dv">1</span></code></pre></div>
+</div>
+<div id="merge-contract-plan-information." class="section level4">
+<h4>Merge contract plan information.</h4>
+<p>At this point, the data for six households that are in the power data but are not registered in the household information are deleted.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">df.plan &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;./世帯情報.csv&quot;</span>, <span class="dt">header=</span>T)
+
+df &lt;-<span class="st"> </span><span class="kw">merge</span>(data2, df.plan, <span class="dt">by=</span><span class="st">&#39;user_id&#39;</span>)
+
+df<span class="op">$</span>power &lt;-<span class="st"> </span><span class="kw">as.integer</span>(df<span class="op">$</span>power)</code></pre></div>
+</div>
+<div id="handling-missing-values-with-an-average." class="section level4">
+<h4>Handling missing values with an average.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># fill missing values with the computed average.</span>
+df<span class="op">$</span>power =<span class="st"> </span><span class="kw">ifelse</span>(<span class="kw">is.na</span>(df<span class="op">$</span>power),
+                  <span class="kw">ave</span>(df<span class="op">$</span>power, <span class="dt">FUN =</span> <span class="cf">function</span>(x)
+                  <span class="kw">mean</span>(x,<span class="dt">na.rm =</span> <span class="ot">TRUE</span>)),df<span class="op">$</span>power)
+<span class="kw">sum</span>(<span class="kw">is.na</span>(df))</code></pre></div>
+</div>
+<div id="add-more-features-including-location-latitude-longitude." class="section level4">
+<h4>Add more features including location, latitude, longitude.</h4>
+<p>Let’s replace the postal code variable so that it can be read by the ggmap() function for plotting a map.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Changing the postal codes.</span>
+df<span class="op">$</span>postal_code =<span class="st"> </span><span class="kw">gsub</span>(<span class="st">&#39;[^0-9</span><span class="ch">\\</span><span class="st">-]&#39;</span>,<span class="st">&#39;&#39;</span>, df<span class="op">$</span>postal_code)
+df<span class="op">$</span>postal_code =<span class="st"> </span><span class="kw">as.factor</span>(df<span class="op">$</span>postal_code)
+
+<span class="co"># Calling Changing function to tranfrom the postal codes from a lib file.</span>
+df =<span class="st"> </span><span class="kw">chaningPostalCode</span>(df)</code></pre></div>
+</div>
+<div id="summarize-daily-power-consumption-data-and-assign-to-new-variable." class="section level4">
+<h4>Summarize daily power consumption data and assign to new variable.</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Summarize daily power consumption data and group by variables.</span>
+df.day &lt;-<span class="st"> </span>df <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(Date, user_id, location,lat,lon,timecode) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, sum)
+df.day<span class="op">$</span>wday &lt;-<span class="st"> </span><span class="kw">wday</span>(df.day<span class="op">$</span>Date)
+df.day<span class="op">$</span>wday[df.day<span class="op">$</span>Date <span class="op">%in%</span><span class="st"> </span>holidays] &lt;-<span class="st"> </span><span class="dv">1</span>
+df.day &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.day, df.plan, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Saving data into R aata format.</span>
+<span class="kw">save</span>(df, df.day, <span class="dt">file =</span> <span class="st">&quot;MiyamaData.Rdata&quot;</span>)</code></pre></div>
+</div>
+<div id="after-data-wrangling." class="section level4">
+<h4>After data wrangling.</h4>
+<p>Finally, the dataset contains 747,168 observation of 12 variables gathered between January 2018 and June 2018 (6 months). It is a subset of an original larger data.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Reload df saved in the earlier function.</span>
+<span class="kw">load</span>(<span class="st">&quot;MiyamaData.Rdata&quot;</span>)
+<span class="co"># Compactly display the internal structure of an R object.</span>
+<span class="kw">str</span>(df.day)</code></pre></div>
+<pre><code>## Classes &#39;grouped_df&#39;, &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:  747168 obs. of  12 variables:
+##  $ Date       : Date, format: &quot;2018-01-01&quot; &quot;2018-01-01&quot; ...
+##  $ user_id    : chr  &quot;asyxuq&quot; &quot;asyxuq&quot; &quot;asyxuq&quot; &quot;asyxuq&quot; ...
+##  $ location   : chr  &quot;Setakamachi Kaminosho&quot; &quot;Setakamachi Kaminosho&quot; &quot;Setakamachi Kaminosho&quot; &quot;Setakamachi Kaminosho&quot; ...
+##  $ lat        : num  33.2 33.2 33.2 33.2 33.2 ...
+##  $ lon        : num  130 130 130 130 130 ...
+##  $ timecode   : int  1 2 3 4 5 6 7 8 9 10 ...
+##  $ power      : num  227 161 194 157 203 158 209 235 242 189 ...
+##  $ wday       : num  1 1 1 1 1 1 1 1 1 1 ...
+##  $ postal_code: Factor w/ 44 levels &quot;〒830-0039&quot;,&quot;〒830-0070&quot;,..: 22 22 22 22 22 22 22 22 22 22 ...
+##  $ plan_type  : Factor w/ 6 levels &quot;オール電化Eプラン&quot;,..: 4 4 4 4 4 4 4 4 4 4 ...
+##  $ aiseg_nb   : Factor w/ 100 levels &quot;00141-85606&quot;,..: 97 97 97 97 97 97 97 97 97 97 ...
+##  $ user_name  : Factor w/ 100 levels &quot;中尾 眞智子&quot;,..: 98 98 98 98 98 98 98 98 98 98 ...
+##  - attr(*, &quot;vars&quot;)= chr  &quot;Date&quot; &quot;user_id&quot; &quot;location&quot; &quot;lat&quot; ...
+##  - attr(*, &quot;drop&quot;)= logi TRUE</code></pre>
+</div>
+<div id="attribute-information" class="section level4">
+<h4>Attribute Information</h4>
+<ul>
+<li>Date – the day of the month or year as specified by a number.</li>
+<li>user_id – id of each user/household.</li>
+<li>location – a particular place of each household in Miyama city.</li>
+<li>lat – latitude of each location of each household in Miyama city.</li>
+<li>lon – longitude of each location of each household in Miyama city.</li>
+<li>timecode – the date and time were converted to timecode.</li>
+<li>power – daily energy usage of each household (in watt-hour of active energy).</li>
+<li>wday – the day of the week as a decimal number (01-07, Sunday is 1).</li>
+<li>postal_code – postal codes for all regions in Japan.</li>
+<li>plan_type – types of electricity plans.</li>
+<li>aiseg_nb – code of electricity plan types.</li>
+<li>user_name – username of each user/household.</li>
+</ul>
+</div>
+</div>
+<div id="exploring-daily-power-consumption-of-consumers" class="section level3">
+<h3>Exploring daily power consumption of consumers</h3>
+<p>Before designing the energy prediction model, we had analyzed the collected data to discover some interesting findings that we would then explore further.</p>
+<div id="summarize-daily-power-consumption-for-each-household-user-ids" class="section level5">
+<h5>Summarize daily power consumption for each household (user Ids)</h5>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">df.mean &lt;-<span class="st"> </span>df.day <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id, location) <span class="op">%&gt;%</span><span class="st"> </span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">summarise</span>(<span class="dt">pw_mean =</span> <span class="kw">round</span>(<span class="kw">mean</span>(power), <span class="dv">4</span>), <span class="dt">pw_total =</span> <span class="kw">round</span>(<span class="kw">sum</span>(power), <span class="dv">4</span>)) <span class="op">%&gt;%</span>
+<span class="st">  </span><span class="kw">arrange</span>(<span class="kw">desc</span>(pw_mean))
+<span class="kw">datatable</span>(df.mean, <span class="dt">options =</span> <span class="kw">list</span>(<span class="dt">pageLength =</span> <span class="dv">6</span>))</code></pre></div>
+<div id="htmlwidget-fd9dbc558c7ddf70420f" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fd9dbc558c7ddf70420f">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86"],["kryetv","kvhhqy","ycvknp","ppuzrj","mfqvhh","zewcwa","ejzmrj","nvxtvf","jwkshr","xvpeer","burjcy","qfdrqc","uqhrdw","fxkaqb","hkjgvc","qqksuz","kcdpnu","czmrhs","vcjzvg","cuajty","vkqhtg","swcjte","urdrac","zwndgw","ktjwav","gnkpmq","tqdyhy","syjtps","wmufxr","asyxuq","qxdeqa","mfjszn","sutwjq","ycjdgz","zqchfm","fcbjan","ymnhww","zpvxhs","pvakku","ztwsrb","mnmubz","xfzpmw","skubgb","sfxzxd","qctvrt","djatkc","mhvmaq","vekzrd","myqwzy","zqrckx","atcmhw","nqzyqj","xfnvsh","ueytut","rfnxhj","jfbpuv","ubvzpf","tvrjny","vbtdcw","pxkzpt","burwjc","nkmawx","ffhczu","ukauxp","utjbpt","msekwa","ganmxg","qtxppf","rrfzpz","xbxakt","jttjhw","kusayn","vxykyy","yraxgf","nazbnb","tpmgzy","rqucnt","bgdasc","wvmakp","uqxuag","kckvec","wxsjcv","ymvgnk","ymcaaj","nsarbp","qdrzsj"],["Setakamachi Shimonosho","Setakamachi Takayanagi","Setakamachi Shimonosho","Setakamachi Kaminosho","Setakamachi Okusa","Setakamachi Nagata","Takatamachi Kitashingai","Takatamachi Iwatsu","Yamakawamachi Haramachi","Setakamachi Yamato","Takatamachi Kurosakibiraki","Yamakawamachi Tachiyama","Setakamachi Ogawa","Setakamachi Ogawa","Takatamachi Enoramachi","Setakamachi Shimonosho","Takatamachi Enora","Takatamachi Enoramachi","Setakamachi Motoyoshi","Setakamachi Sakata","Takatamachi Nose","Setakamachi Ogawa","Yamakawamachi Mayumi","Yamakawamachi Ono","Takatamachi Tajiri","Setakamachi Higashitsuru","Takatamachi Takei","Takatamachi Maizuru","Setakamachi Shimonosho","Setakamachi Kaminosho","Setakamachi Shimonosho","Setakamachi Oga","Setakamachi Oda","Takatamachi Shimokusuda","Setakamachi Hamada","Yamakawamachi Shimizu","Takatamachi Maizuru","Takatamachi Kurosakibiraki","Takatamachi Iwatsu","Takatamachi Minamishingai","Setakamachi Oda","Hanabatake","Takatamachi Hae","Takatamachi Shimokusuda","Takatamachi Kitashingai","Takatamachi Enora","Setakamachi Nagata","Setakamachi Ogawa","Setakamachi Kaminosho","Mitsuhashimachi Imakoga","Takatamachi Imabuku","Setakamachi Hongo","Setakamachi Shimonosho","Setakamachi Okusa","Yamakawamachi Kawaharauchi","Takatamachi Nose","Hirokawa","Takatamachi Enoramachi","Setakamachi Hongo","Yamakawamachi Mayumi","Setakamachi Kaminosho","Takatamachi Enoramachi","Yamakawamachi Koda","Takatamachi Enora","Takatamachi Kitashingai","Takatamachi Minamishingai","Setakamachi Shimonosho","Setakamachi Kaminosho","Setakamachi Oga","Setakamachi Oe","Takatamachi Shimokusuda","Setakamachi Ogawa","Mitsuhashimachi Kamafunatsu","Takatamachi Haru","Setakamachi Sakata","Setakamachi Oe","Setakamachi Shimonosho","Setakamachi Hamada","Takatamachi Enoramachi","Takatamachi Enoramachi","Niishiro","Daizenjiminami","Setakamachi Shimonosho","Yamakawamachi Ono","Setakamachi Hongo","Yamakawamachi Tachiyama"],[1012.2289,887.4888,728.9279,711.0187,693.6476,665.6496,665.0681,592.9677,580.0699,554.5257,551.0196,505.2133,495.5292,491.1496,480.126,479.5437,479.4467,477.3096,476.1973,457.0648,430.7071,421.6889,411.2892,408.208,404.7157,399.1416,387.4422,382.6737,370.7166,363.003,346.955,340.5622,336.9092,334.1211,323.452,319.5661,318.1306,317.7699,316.4437,312.4385,297.6035,297.0929,288.7088,288.0038,286.643,285.9886,284.5511,281.4659,280.6512,279.7304,277.6136,273.5902,271.235,260.548,258.9371,235.507,233.628,233.2018,226.8325,222.943,222.3478,222.0396,219.6607,212.0571,210.498,209.0113,205.3398,201.3561,193.9991,193.8504,188.6166,188.2755,186.7206,173.3119,156.2921,149.0873,132.7807,128.9105,112.6501,100.4592,38.363,22.9156,6.2516,0.0378,0,0],[8794245,7710503,6332926,6177330.3754,6026410,5783163.4287,5778112,5151703.7144,5039647.2862,4817719,4787258.4287,4389293,4305157.7144,4267107.7144,4171335,4166275.4287,4165433,4146866,4137201.7144,3970978.7144,3741983.7144,3663633,3573280.7149,3546510.7144,3516170,3467742,3366097.7144,3324669.4287,3220786,3153769.7144,3014345,2958804,2927067,2902843.7144,2810151,2776390,2763919,2760784.7144,2749263,2714466,2585579,2581143,2508302,2502177,2490354,2484669,2472180,2445376,2438297.7144,2430297.7144,2411907,2376951.7144,2356490,2263641,2249645.8574,2046085,2029759.717,2026057,1970721,1936929,1931757.8574,1929080,1908412,1842352,1828807,1815890.1431,1783991.8574,1749382,1685464,1684172.5718,1638701,1635737.7144,1622228.4287,1505734,1357866,1295270.7144,1153599,1119974.7144,978703.7144,872789.4287,333298,199090.592,54313.7144,328.7144,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>user_id<\/th>\n      <th>location<\/th>\n      <th>pw_mean<\/th>\n      <th>pw_total<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":6,"columnDefs":[{"className":"dt-right","targets":[3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[6,10,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="summarize-distribution-of-power-consumption-for-each-location" class="section level5">
+<h5>Summarize distribution of power consumption for each location</h5>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-13-1.png" /><!-- --></p>
+</div>
+<div id="summarize-mean-daily-power-consumption-for-each-location" class="section level5">
+<h5>Summarize mean daily power consumption for each location</h5>
+<p><div id="htmlwidget-65bdc8c57af982f85810" style="width:800px;height:230px;" class="leaflet html-widget"></div>
+<script type="application/json" data-for="htmlwidget-65bdc8c57af982f85810">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[33.1465396,33.169,33.118683,33.1515679,33.1597333,33.1496466,33.1727922,33.102,33.091,33.117,33.1372773,33.126,33.088,33.169,33.162,33.1530576,33.1145997,33.1005354,33.108,33.137801,33.153,33.094953,33.1633814,33.747,33.1151319,33.17,33.109,33.1134227,33.094,33.1268474,33.0925915,33.1463738,33.127,33.642,33.1312732,33.1230136,33.1291815,33.1672312,33.107,33.138,33.176,33.578,33.27],[130.4520103,130.474,130.5223623,130.4926236,130.5053987,130.5082849,130.4998252,130.478,130.441,130.485,130.4501555,130.499,130.433,130.474,130.466,130.4694748,130.5154582,130.4548089,130.451,130.504015,130.497,130.5464426,130.4912656,130.781,130.5026464,130.428,130.459,130.4408211,130.467,130.465623,130.4464803,130.5211137,130.49,130.735,130.4560583,130.5231146,130.5025437,130.418267,130.477,130.472,130.483,130.776,130.477],10,null,null,{"interactive":true,"className":"","stroke":true,"color":["#A50026","#EF643E","#FECA78","#FED985","#FFF7B2","#FFF7B2","#FFF8B3","#FFFFBF","#F6FBB3","#E9F6A1","#E7F59D","#E1F296","#E1F296","#DCF08F","#D1EC86","#D0EB85","#CEEA84","#C4E67D","#C0E47B","#BCE378","#BBE277","#BBE277","#B5DF73","#AFDD70","#AADB6C","#A4D86A","#A3D76A","#9ED569","#9ED569","#9BD469","#97D268","#96D168","#91CF68","#83C966","#7EC765","#79C565","#6DC064","#60B961","#56B35E","#54B25E","#51B05D","#04703B","#006837"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["#A50026","#EF643E","#FECA78","#FED985","#FFF7B2","#FFF7B2","#FFF8B3","#FFFFBF","#F6FBB3","#E9F6A1","#E7F59D","#E1F296","#E1F296","#DCF08F","#D1EC86","#D0EB85","#CEEA84","#C4E67D","#C0E47B","#BCE378","#BBE277","#BBE277","#B5DF73","#AFDD70","#AADB6C","#A4D86A","#A3D76A","#9ED569","#9ED569","#9BD469","#97D268","#96D168","#91CF68","#83C966","#7EC765","#79C565","#6DC064","#60B961","#56B35E","#54B25E","#51B05D","#04703B","#006837"],"fillOpacity":0.2},null,null,["<b> Setakamachi Takayanagi <\/b> <\/br>Mean:  887.4888  Wh <\/br>Total:  7710503  Wh","<b> Setakamachi Shimonosho <\/b> <\/br>Mean:  728.9279  Wh <\/br>Total:  6332926  Wh","<b> Yamakawamachi Haramachi <\/b> <\/br>Mean:  580.0699  Wh <\/br>Total:  5039647.2862  Wh","<b> Setakamachi Yamato <\/b> <\/br>Mean:  554.5257  Wh <\/br>Total:  4817719  Wh","<b> Setakamachi Okusa <\/b> <\/br>Mean:  477.0978  Wh <\/br>Total:  8290051  Wh","<b> Setakamachi Motoyoshi <\/b> <\/br>Mean:  476.1973  Wh <\/br>Total:  4137201.7144  Wh","<b> Setakamachi Nagata <\/b> <\/br>Mean:  475.1003  Wh <\/br>Total:  8255343.4287  Wh","<b> Takatamachi Iwatsu <\/b> <\/br>Mean:  454.7057  Wh <\/br>Total:  7900966.7144  Wh","<b> Takatamachi Kurosakibiraki <\/b> <\/br>Mean:  434.3947  Wh <\/br>Total:  7548043.1431  Wh","<b> Takatamachi Tajiri <\/b> <\/br>Mean:  404.7157  Wh <\/br>Total:  3516170  Wh","<b> Setakamachi Higashitsuru <\/b> <\/br>Mean:  399.1416  Wh <\/br>Total:  3467742  Wh","<b> Takatamachi Takei <\/b> <\/br>Mean:  387.4422  Wh <\/br>Total:  3366097.7144  Wh","<b> Takatamachi Kitashingai <\/b> <\/br>Mean:  387.403  Wh <\/br>Total:  10097273  Wh","<b> Setakamachi Ogawa <\/b> <\/br>Mean:  375.6218  Wh <\/br>Total:  16317012.1431  Wh","<b> Setakamachi Kaminosho <\/b> <\/br>Mean:  355.6754  Wh <\/br>Total:  15450537.6616  Wh","<b> Setakamachi Shimonosho <\/b> <\/br>Mean:  353.1314  Wh <\/br>Total:  24544046.0005  Wh","<b> Takatamachi Maizuru <\/b> <\/br>Mean:  350.4022  Wh <\/br>Total:  6088588.4287  Wh","<b> Takatamachi Nose <\/b> <\/br>Mean:  333.1071  Wh <\/br>Total:  5788068.7144  Wh","<b> Takatamachi Enora <\/b> <\/br>Mean:  325.8308  Wh <\/br>Total:  8492454  Wh","<b> Yamakawamachi Shimizu <\/b> <\/br>Mean:  319.5661  Wh <\/br>Total:  2776390  Wh","<b> Setakamachi Oda <\/b> <\/br>Mean:  317.2563  Wh <\/br>Total:  5512646  Wh","<b> Yamakawamachi Mayumi <\/b> <\/br>Mean:  317.1161  Wh <\/br>Total:  5510209.7149  Wh","<b> Setakamachi Sakata <\/b> <\/br>Mean:  306.6784  Wh <\/br>Total:  5328844.7144  Wh","<b> Hanabatake <\/b> <\/br>Mean:  297.0929  Wh <\/br>Total:  2581143  Wh","<b> Takatamachi Hae <\/b> <\/br>Mean:  288.7088  Wh <\/br>Total:  2508302  Wh","<b> Mitsuhashimachi Imakoga <\/b> <\/br>Mean:  279.7304  Wh <\/br>Total:  2430297.7144  Wh","<b> Takatamachi Imabuku <\/b> <\/br>Mean:  277.6136  Wh <\/br>Total:  2411907  Wh","<b> Takatamachi Enoramachi <\/b> <\/br>Mean:  270.9644  Wh <\/br>Total:  14124831.1431  Wh","<b> Takatamachi Shimokusuda <\/b> <\/br>Mean:  270.2471  Wh <\/br>Total:  7043721.7144  Wh","<b> Setakamachi Oga <\/b> <\/br>Mean:  267.2806  Wh <\/br>Total:  4644268  Wh","<b> Takatamachi Minamishingai <\/b> <\/br>Mean:  260.7249  Wh <\/br>Total:  4530356.1431  Wh","<b> Yamakawamachi Kawaharauchi <\/b> <\/br>Mean:  258.9371  Wh <\/br>Total:  2249645.8574  Wh","<b> Yamakawamachi Tachiyama <\/b> <\/br>Mean:  252.6066  Wh <\/br>Total:  4389293  Wh","<b> Hirokawa <\/b> <\/br>Mean:  233.628  Wh <\/br>Total:  2029759.717  Wh","<b> Setakamachi Hamada <\/b> <\/br>Mean:  226.1813  Wh <\/br>Total:  3930125.7144  Wh","<b> Yamakawamachi Koda <\/b> <\/br>Mean:  219.6607  Wh <\/br>Total:  1908412  Wh","<b> Yamakawamachi Ono <\/b> <\/br>Mean:  204.1229  Wh <\/br>Total:  3546839.4287  Wh","<b> Mitsuhashimachi Kamafunatsu <\/b> <\/br>Mean:  186.7206  Wh <\/br>Total:  1622228.4287  Wh","<b> Takatamachi Haru <\/b> <\/br>Mean:  173.3119  Wh <\/br>Total:  1505734  Wh","<b> Setakamachi Oe <\/b> <\/br>Mean:  171.4689  Wh <\/br>Total:  2979443.2862  Wh","<b> Setakamachi Hongo <\/b> <\/br>Mean:  166.8076  Wh <\/br>Total:  4347672.7144  Wh","<b> Niishiro <\/b> <\/br>Mean:  38.363  Wh <\/br>Total:  333298  Wh","<b> Daizenjiminami <\/b> <\/br>Mean:  22.9156  Wh <\/br>Total:  199090.592  Wh"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addLegend","args":[{"colors":["#006837 , #17934D 8.91589052263013%, #69BE63 20.4822911466606%, #B1DE71 32.048691770691%, #E7F59E 43.6150923947215%, #FFEFA4 55.1814930187519%, #FEBE6E 66.7478936427824%, #F67948 78.3142942668128%, #D73127 89.8806948908432%, #A50026 "],"labels":["100","200","300","400","500","600","700","800"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"numeric","title":"mean consumption (Wh)","extra":{"p_1":0.0891589052263013,"p_n":0.898806948908432},"layerId":null,"className":"info legend","group":null}]}],"setView":[[33.1524,130.4747],12,[]],"limits":{"lat":[33.088,33.747],"lng":[130.418267,130.781]}},"evals":[],"jsHooks":[]}</script><img src="miyama_analysis_files/figure-html/unnamed-chunk-15-2.png" /><!-- --></p>
+<ul>
+<li>Fig. shows the daily electric power consumption between January 1 and June 30, 2018 for the different locations considered in this study. Daily electric power consumption values indicate that <strong>User kryetv</strong> has the highest total energy consumption within this period.<br />
+</li>
+<li>The average electric power consumption per day for each location ranges from 0 Wh to about 48.587 kWh.</li>
+</ul>
+</div>
+<div id="summarize-mean-daily-power-consumption-for-each-houshhold" class="section level5">
+<h5>Summarize mean daily power consumption for each houshhold</h5>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-16-1.png" /><!-- --></p>
+<ul>
+<li>Fig. shows the daily electric power consumption between January 1 and June 30, 2018 for the different households considered in this study. Daily electric power consumption values indicate that <strong>Setakamachi Takayanagi</strong> has the highest total energy consumption within this period.</li>
+<li>The average power consumption per day for each household ranges from 0 Wh to about 42.599 kWh.</li>
+</ul>
+</div>
+</div>
+<div id="cluster-analysis" class="section level3">
+<h3>Cluster analysis</h3>
+<div id="k-means-method" class="section level4">
+<h4>k-means method</h4>
+<div id="plot-the-silhouette-diagram-by-changing-the-number-of-clusters-from-2-to-8" class="section level5">
+<h5>Plot the silhouette diagram by changing the number of clusters from 2 to 8</h5>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df.house)
+models &lt;-<span class="st"> </span><span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) {
+  <span class="kw">kmeans</span>(df.house[, <span class="dv">2</span><span class="op">:</span>nc], <span class="dt">centers=</span>k, <span class="dt">iter.max=</span><span class="dv">300</span>, <span class="dt">nstart=</span><span class="dv">10</span>)
+})
+dmat &lt;-<span class="st"> </span><span class="kw">dist</span>(df.house[, <span class="dv">2</span><span class="op">:</span>nc])
+
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  ml &lt;-<span class="st"> </span>models[[k]]
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>ml<span class="op">$</span>cluster, <span class="dt">dist=</span>dmat)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-19-1.png" /><!-- --></p>
+<ul>
+<li>About the silhouette value
+<ul>
+<li>It takes a value from -1 to 1.</li>
+<li>As closer to 1 it means that the sample is separated from other clusters (well separated).</li>
+<li>If it is close to 0, it means that it is close to or overlaps other clusters.</li>
+<li>A minus signifies that the sample may be classified as another wrong cluster.</li>
+</ul></li>
+<li>In the silhouette diagram, it is necessary that the sample exceeding the average value of the silhouette value is as it is.
+<ul>
+<li>If there are clusters without samples that exceed the average value of the silhouette values, it is not very good.</li>
+</ul></li>
+</ul>
+<p>Considering such characteristics of the silhouette value and silhouette diagram, it is considered that the number of thrusters = 5 is relatively good.</p>
+<ul>
+<li>For the time being, consider the case of k = 5.</li>
+</ul>
+</div>
+</div>
+<div id="plot-state-of-classification" class="section level4">
+<h4>Plot state of classification</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ml &lt;-<span class="st"> </span>models[[<span class="dv">5</span>]]
+df &lt;-<span class="st"> </span>df.house
+df<span class="op">$</span>cls &lt;-<span class="st"> </span>ml<span class="op">$</span>cluster
+nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df)
+<span class="co"># k Random forest execution (to obtain importance) as clusters obtained by the average method as teacher data.</span>
+f.str &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;cls ~&quot;</span>, <span class="kw">paste</span>(<span class="kw">names</span>(df)[<span class="dv">2</span><span class="op">:</span>(nc<span class="op">-</span><span class="dv">1</span>)], <span class="dt">collapse=</span><span class="st">&#39;+&#39;</span>))
+f &lt;-<span class="st"> </span><span class="kw">as.formula</span>(f.str)
+m.rf &lt;-<span class="st"> </span><span class="kw">randomForest</span>(f, df, <span class="dt">ntree=</span><span class="dv">100</span>)
+imp &lt;-<span class="st"> </span><span class="kw">importance</span>(m.rf)
+
+df.tmp &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">name=</span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]], <span class="dt">imp=</span><span class="kw">as.numeric</span>(imp))
+<span class="kw">ggplot</span>(df.tmp, <span class="kw">aes</span>(<span class="dt">x=</span><span class="kw">reorder</span>(name, imp), <span class="dt">y=</span>imp, <span class="dt">group=</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_bar</span>(<span class="dt">stat=</span><span class="st">&quot;identity&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">xlab</span>(<span class="st">&quot;variable name&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">ylab</span>(<span class="st">&quot;importance&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme</span>(<span class="dt">axis.text.x=</span><span class="kw">element_text</span>(<span class="dt">angle=</span><span class="dv">90</span>, <span class="dt">hjust=</span><span class="dv">1</span>))</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-20-1.png" /><!-- --> ***</p>
+<ul>
+<li>Maximum power consumption per day (“power.max?”) is an important variable.</li>
+<li>The minimum power consumption per day (“power.min?”) has little relation to the classification.</li>
+<li>Important in order of “max”, “sd”, “moment”, “mean”, “skewness”, “kurtosis”?</li>
+</ul>
+</div>
+<div id="cluster-variables-by-narrowing-down-variables" class="section level4">
+<h4>Cluster variables by narrowing down variables</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sts &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;max&quot;</span>, <span class="st">&quot;min&quot;</span>, <span class="st">&quot;mean&quot;</span>, <span class="st">&quot;moment&quot;</span>, <span class="st">&quot;kurtosis&quot;</span>, <span class="st">&quot;skewness&quot;</span>, <span class="st">&quot;sd&quot;</span>)
+vars &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;power.&quot;</span>, sts)
+models2 &lt;-<span class="st"> </span><span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) {
+  <span class="kw">kmeans</span>(df.house[, vars], <span class="dt">centers=</span>k, <span class="dt">iter.max=</span><span class="dv">300</span>, <span class="dt">nstart=</span><span class="dv">10</span>)
+})
+dmat2 &lt;-<span class="st"> </span><span class="kw">dist</span>(df.house[, vars])
+
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  ml &lt;-<span class="st"> </span>models2[[k]]
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>ml<span class="op">$</span>cluster, <span class="dt">dist=</span>dmat2)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-21-1.png" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ml &lt;-<span class="st"> </span>models2[[<span class="dv">5</span>]]
+df &lt;-<span class="st"> </span>df.house
+df<span class="op">$</span>cls &lt;-<span class="st"> </span><span class="kw">factor</span>(<span class="kw">as.character</span>(ml<span class="op">$</span>cluster))
+nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df)
+<span class="co"># k Random forest execution (to obtain importance) as clusters obtained by the average method as teacher data.</span>
+f.str &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;cls ~&quot;</span>, <span class="kw">paste</span>(vars, <span class="dt">collapse=</span><span class="st">&#39;+&#39;</span>))
+f &lt;-<span class="st"> </span><span class="kw">as.formula</span>(f.str)
+m.rf &lt;-<span class="st"> </span><span class="kw">randomForest</span>(f, df, <span class="dt">ntree=</span><span class="dv">100</span>)
+imp &lt;-<span class="st"> </span><span class="kw">importance</span>(m.rf)
+
+df.tmp &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">name=</span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]], <span class="dt">imp=</span><span class="kw">as.numeric</span>(imp))
+<span class="kw">ggplot</span>(df.tmp, <span class="kw">aes</span>(<span class="dt">x=</span><span class="kw">reorder</span>(name, imp), <span class="dt">y=</span>imp, <span class="dt">group=</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_bar</span>(<span class="dt">stat=</span><span class="st">&quot;identity&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">xlab</span>(<span class="st">&quot;variable name&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">ylab</span>(<span class="st">&quot;importance&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme</span>(<span class="dt">axis.text.x=</span><span class="kw">element_text</span>(<span class="dt">angle=</span><span class="dv">90</span>, <span class="dt">hjust=</span><span class="dv">1</span>, <span class="dt">family=</span>JPFont))</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-22-1.png" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Plot state of classification.</span>
+v1 &lt;-<span class="st"> </span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]][<span class="kw">order</span>(imp, <span class="dt">decreasing=</span>T)[<span class="dv">1</span>]]
+v2 &lt;-<span class="st"> </span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]][<span class="kw">order</span>(imp, <span class="dt">decreasing=</span>T)[<span class="dv">2</span>]]
+<span class="kw">ggplot</span>(df, <span class="kw">aes_string</span>(<span class="dt">x=</span>v1, <span class="dt">y=</span>v2, <span class="dt">colour=</span><span class="st">&quot;cls&quot;</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>()</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-22-2.png" /><!-- --></p>
+<p>Are you influenced by the magnitude of the value?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">apply</span>(df[,vars], <span class="dv">2</span>, range)</code></pre></div>
+<pre><code>##       power.max power.min power.mean power.moment power.kurtosis
+## [1,]   21.36494    0.0000    5.83796      5.83796       1.267675
+## [2,] 2915.36241  501.7305 1005.09951   1005.09951      11.494458
+##      power.skewness   power.sd
+## [1,]      -1.005860   7.104136
+## [2,]       3.038651 765.347954</code></pre>
+<ul>
+<li>It seems that the importance of the variable depends on the magnitude (range) of the value.
+<ul>
+<li>Min-max Normalize and perform clustering and importance analysis.</li>
+</ul></li>
+</ul>
+<div id="scaling" class="section level6">
+<h6>Scaling</h6>
+<p>Apply min-max scaling.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df.house)
+vars &lt;-<span class="st"> </span><span class="kw">names</span>(df.house)[<span class="dv">2</span><span class="op">:</span>nc]
+df.house.scale &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">user_id=</span>df.house<span class="op">$</span>user_id)
+<span class="cf">for</span> (v <span class="cf">in</span> vars) {
+  r &lt;-<span class="st"> </span><span class="kw">range</span>(df.house[[v]])
+  a &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">/</span>(r[<span class="dv">2</span>]<span class="op">-</span>r[<span class="dv">1</span>])
+  b &lt;-<span class="st"> </span>r[<span class="dv">1</span>]<span class="op">*</span>a
+  df.house.scale[[v]] &lt;-<span class="st"> </span>df.house[[v]]<span class="op">*</span>a<span class="op">-</span>b
+}</code></pre></div>
+<p>Here, the k-means method is applied. First, use all variables.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df.house.scale)
+models.scale &lt;-<span class="st"> </span><span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) {
+  <span class="kw">kmeans</span>(df.house.scale[, <span class="dv">2</span><span class="op">:</span>nc], <span class="dt">centers=</span>k, <span class="dt">iter.max=</span><span class="dv">300</span>, <span class="dt">nstart=</span><span class="dv">10</span>)
+})
+dmat.scale &lt;-<span class="st"> </span><span class="kw">dist</span>(df.house.scale[, <span class="dv">2</span><span class="op">:</span>nc])
+
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  ml &lt;-<span class="st"> </span>models.scale[[k]]
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>ml<span class="op">$</span>cluster, <span class="dt">dist=</span>dmat.scale)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-25-1.png" /><!-- --></p>
+<ul>
+<li>In the case of using normalized data, it has not been successfully divided into clusters.</li>
+</ul>
+<p>What about using some variables?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sts &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;max&quot;</span>, <span class="st">&quot;min&quot;</span>, <span class="st">&quot;mean&quot;</span>, <span class="st">&quot;moment&quot;</span>, <span class="st">&quot;kurtosis&quot;</span>, <span class="st">&quot;skewness&quot;</span>, <span class="st">&quot;sd&quot;</span>)
+vars &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;power.&quot;</span>, sts)
+models2.scale &lt;-<span class="st"> </span><span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) {
+  <span class="kw">kmeans</span>(df.house.scale[, vars], <span class="dt">centers=</span>k, <span class="dt">iter.max=</span><span class="dv">300</span>, <span class="dt">nstart=</span><span class="dv">10</span>)
+})
+dmat2.scale &lt;-<span class="st"> </span><span class="kw">dist</span>(df.house.scale[, vars])
+
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  ml &lt;-<span class="st"> </span>models2.scale[[k]]
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>ml<span class="op">$</span>cluster, <span class="dt">dist=</span>dmat2.scale)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-26-1.png" /><!-- --></p>
+<ul>
+<li>Again, it is not well separated.</li>
+</ul>
+<p>How about hierarchical cluster analysis?</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ml0 &lt;-<span class="st"> </span><span class="kw">hclust</span>(dmat.scale, <span class="dt">method=</span><span class="st">&quot;ward.D2&quot;</span>)
+ml0.dend &lt;-<span class="st"> </span><span class="kw">as.dendrogram</span>(ml0)
+<span class="kw">plot</span>(ml0.dend)</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-27-1.png" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">cc &lt;-<span class="st"> </span><span class="kw">cutree</span>(ml0, <span class="dt">k=</span><span class="dv">1</span><span class="op">:</span><span class="dv">8</span>)
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>cc[,k], <span class="dt">dist=</span>dmat.scale)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-27-2.png" /><!-- --></p>
+<ul>
+<li>It has not been successfully classified by HC.
+<ul>
+<li>There are classes that do not exceed the average value of silhouette values.</li>
+<li>There are quite a few elements whose silhouette value is negative.</li>
+</ul></li>
+<li>Cluster analysis (k-means method, hierarchical cluster analysis) using normalized data failed to classify households successfully.
+<ul>
+<li>Is the information shortage?</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div id="add-statistics-on-day-of-the-week-direction-to-explanatory-variables" class="section level4">
+<h4>Add statistics on day of the week direction to explanatory variables</h4>
+<ul>
+<li>However, statistical information on power consumption for each day of the week in the time zone direction is omitted.</li>
+<li>Variables to use are as follows (14 variables)
+<ul>
+<li>Statistics for average power consumption per time zone.</li>
+<li>Statistics for the average daily power consumption for each day of the week.
+<ul>
+<li>Statistics = maximum, minimum, average, standard Deviation, (Secondary) Moment, kurtosis, skewness - moment, kurtosis, skewness are used as indicators of distribution shape features.</li>
+</ul></li>
+</ul></li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">df.td3 &lt;-<span class="st"> </span>df.td <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id, wday) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, sum, <span class="dt">na.rm=</span>T)
+
+<span class="co"># max, min, mean, moment, kurtosis, skewness, sd</span>
+df.max3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, max, <span class="dt">na.rm=</span>T)
+df.min3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, min, <span class="dt">na.rm=</span>T)
+df.mean3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, mean, <span class="dt">na.rm=</span>T)
+df.moment3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, moment, <span class="dt">na.rm=</span>T)
+df.kurtosis3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, kurtosis, <span class="dt">na.rm=</span>T)
+df.skew3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, skewness, <span class="dt">na.rm=</span>T)
+df.sd3 &lt;-<span class="st"> </span>df.td3 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarize_at</span>(<span class="st">&quot;power&quot;</span>, sd, <span class="dt">na.rm=</span>T)
+
+<span class="co"># To summarize</span>
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.max3, df.min3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>, <span class="dt">suffix=</span><span class="kw">c</span>(<span class="st">&quot;.max&quot;</span>, <span class="st">&quot;.min&quot;</span>))
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.stat3, df.mean3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>)
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.stat3, df.moment3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>, <span class="dt">suffix=</span><span class="kw">c</span>(<span class="st">&quot;.mean&quot;</span>, <span class="st">&quot;.moment&quot;</span>))
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.stat3, df.kurtosis3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>)
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.stat3, df.skew3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>, <span class="dt">suffix=</span><span class="kw">c</span>(<span class="st">&quot;.kurtosis&quot;</span>, <span class="st">&quot;.skewness&quot;</span>))
+df.stat3 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.stat3, df.sd3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>)
+<span class="kw">names</span>(df.stat3)[<span class="kw">which</span>(<span class="kw">names</span>(df.stat3)<span class="op">==</span><span class="st">&quot;power&quot;</span>)] &lt;-<span class="st"> &quot;power.sd&quot;</span>
+
+df.house2 &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">user_id=</span>df.house<span class="op">$</span>user_id)
+df.house2 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.house2, df.stat3, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>)
+df.house2 &lt;-<span class="st"> </span><span class="kw">inner_join</span>(df.house2, df.stat2, <span class="dt">by=</span><span class="st">&quot;user_id&quot;</span>, <span class="dt">suffix=</span><span class="kw">c</span>(<span class="st">&quot;.wd&quot;</span>, <span class="st">&quot;.tc&quot;</span>))
+
+df.house2.scale &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">user_id=</span>df.house2<span class="op">$</span>user_id)
+vars &lt;-<span class="st"> </span><span class="kw">names</span>(df.house2)[<span class="dv">2</span><span class="op">:</span><span class="kw">ncol</span>(df.house2)]
+<span class="cf">for</span> (v <span class="cf">in</span> vars) {
+  r &lt;-<span class="st"> </span><span class="kw">range</span>(df.house2[[v]])
+  a &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">/</span>(r[<span class="dv">2</span>]<span class="op">-</span>r[<span class="dv">1</span>])
+  b &lt;-<span class="st"> </span>r[<span class="dv">1</span>]<span class="op">*</span>a
+  df.house2.scale[[v]] &lt;-<span class="st"> </span>a<span class="op">*</span>df.house2[[v]] <span class="op">-</span><span class="st"> </span>b
+}</code></pre></div>
+<div id="k-split-by-average-method" class="section level5">
+<h5>k split by average method</h5>
+<ul>
+<li>Use normalized data.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">vars &lt;-<span class="st"> </span><span class="kw">names</span>(df.house2.scale)[<span class="dv">2</span><span class="op">:</span><span class="kw">ncol</span>(df.house2.scale)]
+models3.scale &lt;-<span class="st"> </span><span class="kw">lapply</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">8</span>, <span class="cf">function</span>(k) {
+  <span class="kw">kmeans</span>(df.house2.scale[, vars], <span class="dt">centers=</span>k, <span class="dt">iter.max=</span><span class="dv">300</span>, <span class="dt">nstart=</span><span class="dv">10</span>)
+})
+dmat3.scale &lt;-<span class="st"> </span><span class="kw">dist</span>(df.house2.scale[, vars])
+
+<span class="kw">par</span>(<span class="dt">mfrow=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">4</span>))
+<span class="cf">for</span> (k <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span><span class="dv">8</span>) {
+  ml &lt;-<span class="st"> </span>models3.scale[[k]]
+  s &lt;-<span class="st"> </span><span class="kw">silhouette</span>(<span class="dt">x=</span>ml<span class="op">$</span>cluster, <span class="dt">dist=</span>dmat3.scale)
+  a &lt;-<span class="st"> </span><span class="kw">summary</span>(s)<span class="op">$</span>avg.width
+  <span class="kw">plot</span>(s, <span class="dt">col=</span><span class="kw">rainbow</span>(k), <span class="dt">do.n.k=</span>F, <span class="dt">do.clus.stat=</span>F, <span class="dt">main=</span><span class="kw">paste</span>(<span class="st">&quot;k=&quot;</span>, k), <span class="dt">xlab=</span><span class="ot">NULL</span>)
+  <span class="kw">abline</span>(<span class="dt">v=</span>a, <span class="dt">col=</span><span class="st">&quot;red&quot;</span>)
+}</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-29-1.png" /><!-- --></p>
+<ul>
+<li>We added statistics on power consumption change for one week, but it can not be said that clustering is not so successful.</li>
+</ul>
+<p>For the time being, we use the classification result in the case of k = 5 which is relatively well classified to find the importance of the variable.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">ml &lt;-<span class="st"> </span>models2.scale[[<span class="dv">5</span>]]
+df &lt;-<span class="st"> </span>df.house2.scale
+df<span class="op">$</span>cls &lt;-<span class="st"> </span><span class="kw">factor</span>(<span class="kw">as.character</span>(ml<span class="op">$</span>cluster))
+nc &lt;-<span class="st"> </span><span class="kw">ncol</span>(df.house2.scale)
+vars &lt;-<span class="st"> </span><span class="kw">names</span>(df.house2.scale)[<span class="dv">2</span><span class="op">:</span>nc]
+<span class="co"># k Run the random forest (to obtain importance) as a teacher data cluster obtained by the average method</span>
+f.str &lt;-<span class="st"> </span><span class="kw">paste</span>(<span class="st">&quot;cls ~&quot;</span>, <span class="kw">paste</span>(vars, <span class="dt">collapse=</span><span class="st">&#39;+&#39;</span>))
+f &lt;-<span class="st"> </span><span class="kw">as.formula</span>(f.str)
+m.rf &lt;-<span class="st"> </span><span class="kw">randomForest</span>(f, df, <span class="dt">ntree=</span><span class="dv">100</span>)
+imp &lt;-<span class="st"> </span><span class="kw">importance</span>(m.rf)
+
+df.tmp &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">name=</span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]], <span class="dt">imp=</span><span class="kw">as.numeric</span>(imp))
+<span class="kw">ggplot</span>(df.tmp, <span class="kw">aes</span>(<span class="dt">x=</span><span class="kw">reorder</span>(name, imp), <span class="dt">y=</span>imp, <span class="dt">group=</span><span class="dv">1</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_bar</span>(<span class="dt">stat=</span><span class="st">&quot;identity&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">xlab</span>(<span class="st">&quot;variable name&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">ylab</span>(<span class="st">&quot;importance&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme</span>(<span class="dt">axis.text.x=</span><span class="kw">element_text</span>(<span class="dt">angle=</span><span class="dv">90</span>, <span class="dt">hjust=</span><span class="dv">1</span>, <span class="dt">family=</span>JPFont))</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-30-1.png" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Plot state of classification.</span>
+v1 &lt;-<span class="st"> </span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]][<span class="kw">order</span>(imp, <span class="dt">decreasing=</span>T)[<span class="dv">1</span>]]
+v2 &lt;-<span class="st"> </span><span class="kw">dimnames</span>(imp)[[<span class="dv">1</span>]][<span class="kw">order</span>(imp, <span class="dt">decreasing=</span>T)[<span class="dv">2</span>]]
+<span class="kw">ggplot</span>(df, <span class="kw">aes_string</span>(<span class="dt">x=</span>v1, <span class="dt">y=</span>v2, <span class="dt">colour=</span><span class="st">&quot;cls&quot;</span>)) <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>()</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-30-2.png" /><!-- --></p>
+<ul>
+<li>It seems to be separated for the time being, but …</li>
+</ul>
+</div>
+</div>
+<div id="plot-explanation-variable-median-value-of-household-belonging-to-each-cluster" class="section level4">
+<h4>Plot explanation variable median value of household belonging to each cluster</h4>
+<p>The ribbon is drawing from the first quartile to the third quartile.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fun.data &lt;-<span class="st"> </span><span class="cf">function</span>(x) {
+  res &lt;-<span class="st"> </span><span class="kw">smedian.hilow</span>(x, <span class="dt">conf.int=</span><span class="fl">0.5</span>)
+  <span class="kw">names</span>(res) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;y&quot;</span>, <span class="st">&quot;ymin&quot;</span>, <span class="st">&quot;ymax&quot;</span>)
+ <span class="kw">return</span> (res)
+}
+
+df.plot &lt;-<span class="st"> </span><span class="kw">melt</span>(df, <span class="dt">id.vars=</span><span class="st">&quot;cls&quot;</span>, <span class="dt">measure.vars=</span>vars)
+<span class="kw">ggplot</span>(df.plot, <span class="kw">aes</span>(<span class="dt">x=</span>variable, <span class="dt">y=</span>value, <span class="dt">colour=</span>cls, <span class="dt">fill=</span>cls, <span class="dt">group=</span>cls)) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_line</span>(<span class="dt">stat=</span><span class="st">&quot;summary&quot;</span>, <span class="dt">fun.y=</span>median) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_ribbon</span>(<span class="dt">stat=</span><span class="st">&quot;summary&quot;</span>, <span class="dt">fun.data=</span>fun.data, <span class="dt">alpha=</span><span class="fl">0.5</span>, <span class="dt">colour=</span><span class="ot">NA</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">scale_colour_discrete</span>(<span class="dt">name=</span><span class="st">&quot;cluster&quot;</span>) <span class="op">+</span>
+<span class="st">  </span><span class="kw">guides</span>(<span class="dt">fill=</span>F) <span class="op">+</span>
+<span class="st">  </span><span class="kw">theme</span>(<span class="dt">axis.text.x=</span><span class="kw">element_text</span>(<span class="dt">angle=</span><span class="dv">90</span>, <span class="dt">hjust=</span><span class="dv">1</span>))</code></pre></div>
+<p><img src="miyama_analysis_files/figure-html/unnamed-chunk-31-1.png" /><!-- --></p>
+<ul>
+<li>There are many overlapping distribution ranges of explanatory variables for each class.
+<ul>
+<li>Characteristic between classes is hard to understand.</li>
+</ul></li>
+</ul>
+</div>
+<div id="future-issues-to-be-examined" class="section level4">
+<h4>Future issues to be examined</h4>
+<ul>
+<li>Add power consumption information for each household appliance.</li>
+</ul>
+<hr />
+<p>Looking for other parts of this series?</p>
+<ul>
+<li><strong><a href="miyama_analysis.html">Data analysis</a> </strong></li>
+<li><strong><a href="miyama_linear_model.html">Linear regression model</a> </strong></li>
+<li><strong><a href="miyama_tree_model.html">Random Forest Regression Model</a> </strong></li>
+</ul>
+</div>
+</div>
+    </section>
+  </div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

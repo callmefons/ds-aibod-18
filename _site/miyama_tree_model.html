@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<title>Miyama City Electric Power Demand by Circuit : Random Forest Regression Model</title>
+
+<script src="site_libs/htmlwidgets-1.2/htmlwidgets.js"></script>
+<script src="site_libs/jquery-1.12.4/jquery.min.js"></script>
+<link href="site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet" />
+<script src="site_libs/datatables-binding-0.4/datatables.js"></script>
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.min.css" rel="stylesheet" />
+<link href="site_libs/dt-core-1.10.16/css/jquery.dataTables.extra.css" rel="stylesheet" />
+<script src="site_libs/dt-core-1.10.16/js/jquery.dataTables.min.js"></script>
+<link href="site_libs/crosstalk-1.0.0/css/crosstalk.css" rel="stylesheet" />
+<script src="site_libs/crosstalk-1.0.0/js/crosstalk.min.js"></script>
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+
+
+
+<link rel="stylesheet" href="miyama_tree_model_files/style.css" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<header>
+<div class="inner">
+<h1 class="title toc-ignore">Miyama City Electric Power Demand by Circuit : Random Forest Regression Model</h1>
+</div>
+</header>
+
+
+
+<div id="content-wrapper">
+  <div class="inner clearfix">
+    <section id="main-content">
+<style type="text/css">
+</style>
+<p><nav> <a href="index.html">Home</a> | <a href="miyama_analysis.html">Data Analysis</a> | <a href="miyama_linear_model.html">Linear Regression Model</a> | <a href="miyama_tree_model.html">Random Forest Regression Model</a> | </nav></p>
+<div id="the-prediction-model" class="section level3">
+<h3>The Prediction model</h3>
+<p>This is an R program to apply Random Forest regression technique on electric power consumption prediction. Our goal is to create a model that predicts daily electric power consumption of different households based on historical electric data, location, day of week, and plan type.</p>
+<ul>
+<li>We selected the data for 86 households and 42 locations for 6 months from 2018-01-01 to 2018-06-30 and divided it into training and test sets. For each machine learning model, we trained the model with the train set for predicting power consumption and used the test set to verify the prediction model.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Create new variable that can be used for modeling</span>
+df.elec &lt;-<span class="st"> </span>df.day <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">group_by</span>(user_id, location, wday, plan_type) <span class="op">%&gt;%</span>
+<span class="st">  </span>dplyr<span class="op">::</span><span class="kw">summarise</span>(<span class="dt">pw_mean =</span> <span class="kw">round</span>(<span class="kw">mean</span>(power), <span class="dv">4</span>),
+                   <span class="dt">pw_max =</span> <span class="kw">round</span>(<span class="kw">max</span>(power), <span class="dv">4</span>),
+                   <span class="dt">pw_min =</span> <span class="kw">round</span>(<span class="kw">min</span>(power), <span class="dv">4</span>),
+                   <span class="dt">pw_sd =</span> <span class="kw">round</span>(<span class="kw">sd</span>(power), <span class="dv">4</span>)) 
+
+<span class="co"># Encoding categorical location data.</span>
+df.elec<span class="op">$</span>location &lt;-<span class="st"> </span><span class="kw">as.factor</span>(df.elec<span class="op">$</span>location)
+df.elec<span class="op">$</span>location =<span class="st"> </span><span class="kw">factor</span>(df.elec<span class="op">$</span>location,
+                       <span class="dt">levels =</span> <span class="kw">as.vector</span>(<span class="kw">unique</span>(df.elec<span class="op">$</span>location)),
+                       <span class="dt">labels =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>,
+                                  <span class="dv">4</span>, <span class="dv">5</span>, <span class="dv">6</span>, <span class="dv">7</span> , <span class="dv">8</span> , <span class="dv">9</span>, <span class="dv">10</span>, <span class="dv">11</span>, <span class="dv">12</span>,
+                                  <span class="dv">13</span>, <span class="dv">14</span>, <span class="dv">15</span>, <span class="dv">16</span>, <span class="dv">17</span>, <span class="dv">18</span>, <span class="dv">19</span>, <span class="dv">20</span>,
+                                  <span class="dv">21</span>, <span class="dv">22</span>, <span class="dv">23</span>, <span class="dv">24</span> ,<span class="dv">25</span> ,<span class="dv">26</span> ,<span class="dv">27</span>, <span class="dv">28</span>,
+                                  <span class="dv">29</span>, <span class="dv">30</span> ,<span class="dv">31</span> ,<span class="dv">32</span> ,<span class="dv">33</span> ,<span class="dv">34</span> ,<span class="dv">35</span> ,<span class="dv">36</span> , 
+                                  <span class="dv">37</span> ,<span class="dv">38</span> ,<span class="dv">39</span> ,<span class="dv">40</span> ,<span class="dv">41</span> ,<span class="dv">42</span>))
+
+<span class="co"># Encoding categorical plan_type data.</span>
+df.elec<span class="op">$</span>plan_type =<span class="st"> </span><span class="kw">factor</span>(df.elec<span class="op">$</span>plan_type,
+                       <span class="dt">levels =</span> <span class="kw">as.vector</span>(<span class="kw">unique</span>(df.elec<span class="op">$</span>plan_type)),
+                       <span class="dt">labels =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span> ,<span class="dv">3</span> ,<span class="dv">4</span> ,<span class="dv">5</span> ,<span class="dv">6</span>))
+
+<span class="co"># Encoding categorical day of week.</span>
+df.elec<span class="op">$</span>wday &lt;-<span class="st"> </span><span class="kw">as.factor</span>(df.elec<span class="op">$</span>wday)
+
+<span class="co"># Selecting predictor variables.</span>
+df.elec &lt;-<span class="st"> </span>df.elec[,<span class="kw">c</span>(<span class="st">&quot;location&quot;</span>, <span class="st">&quot;wday&quot;</span>, <span class="st">&quot;plan_type&quot;</span>, <span class="st">&quot;pw_max&quot;</span>, <span class="st">&quot;pw_min&quot;</span>, <span class="st">&quot;pw_sd&quot;</span>, <span class="st">&quot;pw_mean&quot;</span>)]
+
+<span class="co"># Removing all the zeros.</span>
+df.elec&lt;-df.elec[<span class="op">!</span>(df.elec<span class="op">$</span>pw_mean <span class="op">&lt;</span><span class="dv">1</span>),]
+
+<span class="co"># Splitting the dataset into the Training set and Test set.</span>
+
+<span class="co"># Splitting the dataset into the Training set and Test set.</span>
+<span class="kw">set.seed</span>(<span class="dv">123</span>)
+split=<span class="fl">0.80</span> <span class="co"># Define an 80%/20% train/test split of the dataset</span>
+trainIndex &lt;-<span class="st"> </span><span class="kw">createDataPartition</span>(df.elec<span class="op">$</span>pw_mean, <span class="dt">p=</span>split, <span class="dt">list=</span><span class="ot">FALSE</span>)
+training_set &lt;-<span class="st"> </span>df.elec[ trainIndex,]
+test_set &lt;-<span class="st"> </span>df.elec[<span class="op">-</span>trainIndex,]</code></pre></div>
+<ul>
+<li>Our response variable will continue to be mean of Electric but now we included location, wday, plan_type, max, min and sd of electric power consumption as our list of predictor variables.</li>
+</ul>
+</div>
+<div id="build-random-forest-regression" class="section level3">
+<h3>Build Random Forest Regression</h3>
+<p>In this section, we’ll train a Random Forest Regression model for predicting households daily electric power consumption based on historical electric data, location, day of week, and plan type. Unlike linear models, random forests are able to capture non-linear interaction between the features and the target. Therefore, we will try to switch to a random forest model, and check which is better suited for our scenario.</p>
+<p>In below result we will define the training control, we use repeatedcv method to divide our dataset into 10 folds cross-validation and repeat only 3 repeat times in order to slows down our process.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Define the training control</span>
+fitControl &lt;-<span class="st"> </span><span class="kw">trainControl</span>(
+    <span class="dt">method=</span><span class="st">&#39;repeatedcv&#39;</span>,  <span class="co">#repeat k-fold cross validation</span>
+    <span class="dt">number=</span><span class="dv">10</span>, <span class="co"># number of folds</span>
+    <span class="dt">repeats=</span><span class="dv">3</span>, <span class="co"># number of repeats</span>
+    <span class="dt">savePredictions =</span> <span class="st">&#39;final&#39;</span>,  <span class="co"># saves predictions for optimal tuning parameter</span>
+    <span class="dt">classProbs =</span> T  <span class="co"># should class probabilities be returned</span>
+) </code></pre></div>
+<p>In random forest model, we cannot pre-understand our result because our model are randomly processing. When tuning an algorithm, it is important to have a good understanding of our algorithm so that we know what affect the parameters have on the model we are creating. In this case study, we will stick to tuning two parameters, namely the mtry and the ntree parameters that have the following affect on our random forest model.</p>
+<ul>
+<li>mtry: The number of features to use to build each tree. By default, we know that the random forest will use sqrt(16), or four features per tree.</li>
+<li>ntree: This is the total number of trees in your final ensemble model.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Train the model using rf</span>
+<span class="kw">set.seed</span>(<span class="dv">100</span>)
+model_rf &lt;-<span class="st"> </span><span class="kw">train</span>(pw_mean <span class="op">~</span><span class="st"> </span>., 
+         <span class="dt">data =</span> training_set, 
+         <span class="dt">method =</span> <span class="st">&quot;rf&quot;</span>, 
+         <span class="dt">tuneLength =</span> <span class="dv">10</span>,
+         <span class="dt">trControl =</span> fitControl, 
+         <span class="dt">importance =</span> <span class="ot">TRUE</span>)
+<span class="kw">save</span>(model_rf, <span class="dt">file =</span> <span class="st">&quot;model_rf.Rdata&quot;</span>) <span class="co"># Save model</span></code></pre></div>
+<div id="model-summary" class="section level4">
+<h4>Model summary</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">load</span>(<span class="st">&quot;model_rf.Rdata&quot;</span>)
+model_rf</code></pre></div>
+<pre><code>## Random Forest 
+## 
+## 465 samples
+##   6 predictor
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold, repeated 3 times) 
+## Summary of sample sizes: 419, 418, 419, 417, 419, 418, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  RMSE       Rsquared   MAE     
+##    2    102.65145  0.8786319  77.09469
+##    7     47.76427  0.9462787  35.67768
+##   13     41.42439  0.9536622  30.31269
+##   19     40.83921  0.9540309  29.62362
+##   25     40.77027  0.9537429  29.39748
+##   31     40.77092  0.9535740  29.29252
+##   37     40.89361  0.9530557  29.22549
+##   43     41.22521  0.9523270  29.21119
+##   49     41.21635  0.9525495  29.06537
+##   55     41.22711  0.9525757  28.87361
+## 
+## RMSE was used to select the optimal model using the smallest value.
+## The final value used for the model was mtry = 25.</code></pre>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(model_rf)</code></pre></div>
+<p><img src="miyama_tree_model_files/figure-html/unnamed-chunk-5-1.png" /><!-- --></p>
+<ul>
+<li>We can see the smallest RMSE = 40.8% when mtry = 25.</li>
+</ul>
+</div>
+<div id="checking-variable-importance-for-rf" class="section level4">
+<h4>Checking variable importance for RF</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">varimp &lt;-<span class="st"> </span><span class="kw">varImp</span>(<span class="dt">object=</span>model_rf)
+<span class="co"># Plotting Varianle importance for Random Forest</span>
+<span class="kw">ggplot</span>(varimp) <span class="op">+</span>
+<span class="st">  </span><span class="kw">geom_bar</span>(<span class="dt">stat=</span><span class="st">&quot;identity&quot;</span>, <span class="dt">fill =</span> <span class="st">&quot;#2879d0&quot;</span>)</code></pre></div>
+<p><img src="miyama_tree_model_files/figure-html/unnamed-chunk-6-1.png" /><!-- --></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">  <span class="kw">theme</span>(<span class="dt">axis.text.y =</span> <span class="kw">element_text</span>(<span class="dt">size=</span><span class="dv">6</span>, <span class="dt">hjust =</span> <span class="dv">1</span>),
+        <span class="dt">axis.title=</span><span class="kw">element_text</span>(<span class="dt">size=</span><span class="dv">10</span>),
+        <span class="dt">legend.position=</span><span class="st">&quot;none&quot;</span>)</code></pre></div>
+<pre><code>## List of 3
+##  $ axis.title     :List of 11
+##   ..$ family       : NULL
+##   ..$ face         : NULL
+##   ..$ colour       : NULL
+##   ..$ size         : num 10
+##   ..$ hjust        : NULL
+##   ..$ vjust        : NULL
+##   ..$ angle        : NULL
+##   ..$ lineheight   : NULL
+##   ..$ margin       : NULL
+##   ..$ debug        : NULL
+##   ..$ inherit.blank: logi FALSE
+##   ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;element_text&quot; &quot;element&quot;
+##  $ axis.text.y    :List of 11
+##   ..$ family       : NULL
+##   ..$ face         : NULL
+##   ..$ colour       : NULL
+##   ..$ size         : num 6
+##   ..$ hjust        : num 1
+##   ..$ vjust        : NULL
+##   ..$ angle        : NULL
+##   ..$ lineheight   : NULL
+##   ..$ margin       : NULL
+##   ..$ debug        : NULL
+##   ..$ inherit.blank: logi FALSE
+##   ..- attr(*, &quot;class&quot;)= chr [1:2] &quot;element_text&quot; &quot;element&quot;
+##  $ legend.position: chr &quot;none&quot;
+##  - attr(*, &quot;class&quot;)= chr [1:2] &quot;theme&quot; &quot;gg&quot;
+##  - attr(*, &quot;complete&quot;)= logi FALSE
+##  - attr(*, &quot;validate&quot;)= logi TRUE</code></pre>
+</div>
+<div id="predicting-the-test-set-results" class="section level4">
+<h4>Predicting the Test set results</h4>
+<p>Once the model is created, it can then be used to make predictions on new examples that were not seen in training (the test data).</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">y_pred =<span class="st"> </span><span class="kw">predict</span>(model_rf, <span class="dt">newdata =</span> test_set)</code></pre></div>
+</div>
+<div id="display-actual-and-predict-observations" class="section level4">
+<h4>Display actual and predict observations</h4>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Actual and predict observations</span>
+actuals_preds &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">cbind</span>(<span class="dt">actuals=</span>test_set<span class="op">$</span>pw_mean, <span class="dt">predicteds=</span>y_pred))  
+<span class="kw">datatable</span>(actuals_preds, <span class="dt">options =</span> <span class="kw">list</span>(<span class="dt">pageLength =</span> <span class="dv">6</span>))</code></pre></div>
+<div id="htmlwidget-d88293c5c799bc27ab0b" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d88293c5c799bc27ab0b">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116"],[262.9821,267.2225,274.1225,280.6467,274.1083,282.9442,129.3731,138.4494,583.9123,525.0634,522.7587,522.472,484.4417,634.8939,302.4967,303.9125,483.3994,453.4675,215.4088,367.7858,463.3602,478.5283,194.2589,176.915,576.2442,566.2298,458.1089,469.0433,41.7117,36.974,36.3242,988.7633,413.4583,384.0435,329.0226,668.4621,703.1725,683.8273,300.2524,298.2125,294.1342,216.3481,267.2326,293.1208,157.1143,153.9801,156.8233,280.1098,625.5867,712.0884,361.6649,336.5667,213.4091,187.1632,274.1017,503.5226,495.705,195.316,345.6083,262.8025,126.9842,231.9173,184.8464,183.6275,324.8125,287.755,282.6542,335.6342,353.5817,350.6293,413.3762,143.9628,208.9019,230.5142,242.5588,254.6589,262.9608,207.4375,216.8125,466.2908,497.1508,106.1075,219.5804,203.9858,215.2583,226.325,223.0009,216.6233,218.0642,272.8357,283.4422,276.4253,416.6496,177.6792,365.0158,131.0025,176.1357,173.9006,380.2308,560.7535,709.8608,706.0078,721.7108,316.9006,309.1158,314.625,6.3542,164.6092,718.8608,312.638,298.5925,333.1905,259.9239,263.6908,362.7369,300.0805],[283.842747471795,250.352532091666,266.21945999,265.23138266,263.820312076666,282.98395036,128.638258545751,130.255037452418,488.894139271667,458.093921806667,415.481360100737,616.222020133334,552.038049878573,628.254257618333,321.913465573333,308.470115359524,470.759075999523,497.81418056922,217.180844232222,409.581695086666,477.452583033094,468.426446731717,194.672314243175,198.596250492222,601.844872680476,592.299918667143,452.691292337143,458.293207415238,37.5427106278938,36.530862957381,36.0139556240476,1046.81750246143,420.172557497619,403.208542921668,356.370631646667,683.882744323333,698.302053772727,699.667986249394,256.763037936666,339.786738640159,484.666075813204,216.394731603333,309.189047451429,392.399362548333,159.20130822,146.895457033333,165.035968414762,287.452179809048,531.974135713679,701.38213619606,413.510545423334,318.340362182857,268.852587117619,249.180829276666,246.916524177143,534.455513082222,505.020309569999,204.751219593333,362.086999751905,244.368165946428,152.826922189048,209.031353962063,187.880523292064,201.704707841111,274.709719281349,260.05010948254,265.723986707778,360.460079556666,308.881120438095,295.827885503333,399.203795214286,165.830907313232,228.891894615953,237.80838628,240.412515806667,261.057884413333,260.508309988968,205.848301264762,214.180436109762,389.865091176191,497.90655365381,111.480787570592,278.182806263333,241.075047848333,245.036106651905,217.67668907,225.49335651,203.205741327381,221.690489698572,284.253276214444,247.693274747539,273.867128721111,405.98712763762,196.12081929,346.120680515238,124.649580365476,214.424798906667,204.779151236667,263.452210595715,533.584526349524,773.626665134525,739.173138817381,742.090426307382,303.726816353333,301.407702916666,303.630777543333,21.4733287419047,172.812852317121,626.333242046061,326.768619109545,338.357409294762,322.013088473333,316.9742674,314.186778353333,412.191095291667,365.54773891]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>actuals<\/th>\n      <th>predicteds<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":6,"columnDefs":[{"className":"dt-right","targets":[1,2]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false,"lengthMenu":[6,10,25,50,100]}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="performance-comparison-of-machine-learning-approaches" class="section level4">
+<h4>Performance comparison of machine learning approaches</h4>
+<p>Once we’ve created the different models <strong><a href="miyama_linear_model.html">Linear regression model</a> </strong>, let’s compare their performance.</p>
+<p>In the first, we will stack the models together in a list and then compare the results qualitatively using the function resamples().</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">load</span>(<span class="st">&quot;model_lm.Rdata&quot;</span>)
+model_list &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">lm =</span> model_lm, <span class="dt">rf =</span> model_rf)
+res &lt;-<span class="st"> </span><span class="kw">resamples</span>(model_list)
+<span class="kw">summary</span>(res)</code></pre></div>
+<pre><code>## 
+## Call:
+## summary.resamples(object = res)
+## 
+## Models: lm, rf 
+## Number of resamples: 30 
+## 
+## MAE 
+##        Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA&#39;s
+## lm 26.69866 32.66006 37.05178 36.64231 40.32954 44.13243    0
+## rf 20.71723 27.01899 29.34603 29.39748 31.00628 37.00743    0
+## 
+## RMSE 
+##        Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA&#39;s
+## lm 36.64645 42.75232 49.32212 48.53071 52.58247 59.91187    0
+## rf 27.51837 38.63838 41.30403 40.77027 42.87333 50.67787    0
+## 
+## Rsquared 
+##         Min.   1st Qu.    Median      Mean   3rd Qu.      Max. NA&#39;s
+## lm 0.8781807 0.9128342 0.9317362 0.9301044 0.9529957 0.9634689    0
+## rf 0.9274068 0.9447166 0.9542325 0.9537429 0.9644253 0.9764818    0</code></pre>
+<ul>
+<li>Above you can see that the lm model has the lower RMSE and lower R-squared (it is the better of the two models).</li>
+</ul>
+<p>Alternatively, we want to quantitatively test if one model is better than another.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Compare model performances using resample()</span>
+<span class="kw">compare_models</span>(model_lm, model_rf)</code></pre></div>
+<pre><code>## 
+##  One Sample t-test
+## 
+## data:  x
+## t = 4.9651, df = 29, p-value = 2.795e-05
+## alternative hypothesis: true mean is not equal to 0
+## 95 percent confidence interval:
+##   4.563746 10.957134
+## sample estimates:
+## mean of x 
+##   7.76044</code></pre>
+<ul>
+<li>In this case they are not statistically different.</li>
+</ul>
+<hr />
+<p>Looking for other parts of this series?</p>
+<ul>
+<li><strong><a href="miyama_analysis.html">Data analysis</a> </strong></li>
+<li><strong><a href="miyama_linear_model.html">Linear regression model</a> </strong></li>
+<li><strong><a href="miyama_tree_model.html">Random Forest Regression Model</a> </strong></li>
+</ul>
+</div>
+</div>
+    </section>
+  </div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
